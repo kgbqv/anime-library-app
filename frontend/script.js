@@ -1,7 +1,7 @@
 // script.js
 
 // Base API URL for your Flask backend
-const BASE_API_URL = 'http://khgb.pythonanywhere.com';
+const BASE_API_URL = 'https://khgb.pythonanywhere.com';
 
 // Global variables for sequential borrow form
 let borrowState = 0;  // 0: ask for Student ID, 1: ask for Book ID
