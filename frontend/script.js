@@ -1,6 +1,11 @@
 // script.js
 
-// Base API URL for your Flask backend
+function showDialogueOptions() {
+    document.getElementById('dialogue-options').style.display = 'block';
+  }
+  
+
+// Base API URL for your Flask backend (use HTTPS if needed)
 const BASE_API_URL = 'https://khgb.pythonanywhere.com';
 
 // Global variables for sequential borrow form
@@ -8,11 +13,51 @@ let borrowState = 0;  // 0: ask for Student ID, 1: ask for Book ID
 let storedMaHS = '';
 
 // Global variables for sequential create form
-let createState = 0;  // 0: ask for Book Title, 1: ask for Author, 2: ask for Genre, 3: ask for Quantity
+let createState = 0;  // 0: Book Title, 1: Author, 2: Genre, 3: Quantity
 let createData = {};
 
+// Global variables for sequential return form
+let returnState = 0;  // 0: ask for Student ID, 1: ask for Book ID
+let storedReturnMaHS = '';
+
+dialog = document.getElementById("dialogue-line");
+
+function showText(text) {
+    dialog.innerHTML = text;
+}
+
+function getRandomBorrowMsg(name, book) {
+    const messages = [
+      `Thank you, ${name}! You have borrowed book #${book}.`,
+      `Great choice, ${name}! Enjoy reading book #${book}.`,
+      `You're all set, ${name}! Borrowed book #${book} successfully.`,
+      `Got it, ${name}! Borrowed book #${book} for you.`,
+      `Done, ${name}! Borrowed book #${book} successfully.`,
+    ];
+    showText(messages[Math.floor(Math.random() * messages.length)]);
+  }
+
+function getRandomReturnMsg(name, book) {
+    const messages = [
+      `Thank you, ${name}! You have returned book #${book}.`,
+      `Great job, ${name}! You returned book #${book} successfully.`,
+      `You're all set, ${name}! Returned book #${book} successfully.`,
+      `Got it, ${name}! Returned book #${book} for you.`,
+      `Done, ${name}! Returned book #${book} successfully.`,
+    ];
+    showText(messages[Math.floor(Math.random() * messages.length)]);
+  }
+
 document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOM fully loaded. Dialogue area is active.");
+    fetch(`${BASE_API_URL}/log_visit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: window.location.href })
+    })
+    .then(response => response.json())
+    .then(data => console.log("Visit logged:", data))
+    .catch(error => console.error("Error logging visit:", error));
+  
   
   // Attach event listeners for dialogue option buttons
   const optionButtons = document.querySelectorAll('.dialogue-option');
@@ -44,6 +89,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
+  // Attach event listener for return form "Next" button and input field for Enter key
+  const returnInput = document.getElementById('return-input');
+  document.getElementById('return-next').addEventListener('click', handleReturnNext);
+  returnInput.addEventListener('keydown', (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleReturnNext();
+    }
+  });
+  
   // Attach event listeners for cancel buttons
   const cancelButtons = document.querySelectorAll('.cancel-form');
   cancelButtons.forEach(btn => {
@@ -52,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showDialogueOptions();
       resetBorrowForm();
       resetCreateForm();
+      resetReturnForm();
     });
   });
   
@@ -89,13 +145,22 @@ function handleDialogChoice(choice) {
     toggleForm(true);
     document.getElementById('borrow-form').style.display = 'block';
     document.getElementById('create-form').style.display = 'none';
+    document.getElementById('return-form').style.display = 'none';
     initBorrowForm();
   } else if (choice === 'create') {
     // Show sequential create book form
     toggleForm(true);
     document.getElementById('create-form').style.display = 'block';
     document.getElementById('borrow-form').style.display = 'none';
+    document.getElementById('return-form').style.display = 'none';
     initCreateForm();
+  } else if (choice === 'return') {
+    // Show sequential return book form
+    toggleForm(true);
+    document.getElementById('return-form').style.display = 'block';
+    document.getElementById('borrow-form').style.display = 'none';
+    document.getElementById('create-form').style.display = 'none';
+    initReturnForm();
   } else {
     console.log("Unknown dialogue choice:", choice);
   }
@@ -254,7 +319,7 @@ function handleBorrowNext() {
   const inputVal = inputField.value.trim();
   if (borrowState === 0) {
     if (!inputVal) {
-      alert("Please enter your Student ID.");
+      showText("Please enter your Student ID.");
       return;
     }
     storedMaHS = inputVal;
@@ -264,7 +329,7 @@ function handleBorrowNext() {
     inputField.placeholder = "Book ID";
   } else if (borrowState === 1) {
     if (!inputVal) {
-      alert("Please enter the Book ID.");
+      showText("Please enter the Book ID.");
       return;
     }
     const maSach = inputVal;
@@ -281,9 +346,9 @@ function handleBorrowNext() {
       .then(data => {
         console.log("Data received for borrow:", data);
         if (data.error) {
-          alert("Error: " + data.error);
+          showText("Error: " + data.error);
         } else {
-          alert(data.message);
+            getRandomBorrowMsg(storedMaHS, maSach);
         }
         resetBorrowForm();
         toggleForm(false);
@@ -292,7 +357,7 @@ function handleBorrowNext() {
       })
       .catch(error => {
         console.error('Error borrowing book:', error);
-        alert("Error borrowing book.");
+        showText("Error borrowing book.");
       });
   }
 }
@@ -304,6 +369,75 @@ function resetBorrowForm() {
   inputField.value = "";
   inputField.placeholder = "Student ID";
   document.getElementById('borrow-question').innerText = "";
+}
+
+// -----------------------
+// Sequential Return Form Functions
+// -----------------------
+function initReturnForm() {
+  returnState = 0;
+  storedReturnMaHS = "";
+  const inputField = document.getElementById('return-input');
+  document.getElementById('return-question').innerText = "Enter your Student ID (MaHS):";
+  inputField.value = "";
+  inputField.placeholder = "Student ID";
+}
+
+function handleReturnNext() {
+  const inputField = document.getElementById('return-input');
+  const inputVal = inputField.value.trim();
+  if (returnState === 0) {
+    if (!inputVal) {
+      showText("Please enter your Student ID.");
+      return;
+    }
+    storedReturnMaHS = inputVal;
+    returnState = 1;
+    document.getElementById('return-question').innerText = "Enter the Book ID (MaSach):";
+    inputField.value = "";
+    inputField.placeholder = "Book ID";
+  } else if (returnState === 1) {
+    if (!inputVal) {
+      showText("Please enter the Book ID.");
+      return;
+    }
+    const maSach = inputVal;
+    console.log(`Returning book via sequential form: Student ID ${storedReturnMaHS}, Book ID ${maSach}`);
+    fetch(`${BASE_API_URL}/api/return`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ MaHS: storedReturnMaHS, MaSach: maSach })
+    })
+      .then(response => {
+        console.log("Response received for return:", response);
+        return response.json();
+      })
+      .then(data => {
+        console.log("Data received for return:", data);
+        if (data.error) {
+          showText("Error: " + data.error);
+        } else {
+            getRandomReturnMsg(storedReturnMaHS, maSach);
+        }
+        resetReturnForm();
+        toggleForm(false);
+        showDialogueOptions();
+        fetchBooks();
+      })
+      .catch(error => {
+        console.error('Error returning book:', error);
+        showText("Error returning book.");
+      });
+  }
+}
+
+function resetReturnForm() {
+  returnState = 0;
+  storedReturnMaHS = "";
+  const inputField = document.getElementById('return-input');
+  inputField.value = "";
+  inputField.placeholder = "Student ID";
+  document.getElementById('return-question').innerText = "";
 }
 
 // -----------------------
@@ -323,7 +457,7 @@ function handleCreateNext() {
   const inputVal = inputField.value.trim();
   if (createState === 0) {
     if (!inputVal) {
-      alert("Please enter the Book Title.");
+      showText("Please enter the Book Title.");
       return;
     }
     createData.TenSach = inputVal;
@@ -345,7 +479,6 @@ function handleCreateNext() {
     inputField.placeholder = "Quantity";
   } else if (createState === 3) {
     createData.SoLuong = inputVal ? parseInt(inputVal) : 0;
-    // Now submit the create form data
     console.log("Creating book with data:", createData);
     fetch(`${BASE_API_URL}/api/create_book`, {
       method: 'POST',
@@ -359,9 +492,9 @@ function handleCreateNext() {
       .then(data => {
         console.log("Data received for create book:", data);
         if (data.error) {
-          alert("Error: " + data.error);
+          showText("Error: " + data.error);
         } else {
-          alert(data.message);
+            showText("Book created successfully.");
         }
         resetCreateForm();
         toggleForm(false);
@@ -370,7 +503,7 @@ function handleCreateNext() {
       })
       .catch(error => {
         console.error('Error creating book:', error);
-        alert("Error creating book.");
+        showText("Error creating book.");
       });
   }
 }
@@ -383,10 +516,3 @@ function resetCreateForm() {
   inputField.placeholder = "Book Title";
   document.getElementById('create-question').innerText = "";
 }
-
-// Helper: Show dialogue options (when forms are canceled)
-function showDialogueOptions() {
-  document.getElementById('dialogue-options').style.display = 'block';
-}
-
-// Attach event listeners for Enter key on inputs already handled above.

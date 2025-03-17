@@ -28,7 +28,7 @@
       <!-- Dialogue options column -->
       <div class="dialogue-options" id="dialogue-options">
         <p id="dialogue-line">
-          "Greetings, brave adventurer! What is your next move?"
+          "Greetings!"
         </p>
         <div class="options-buttons">
           <button class="dialogue-option" data-choice="books">Show Books</button>
@@ -36,10 +36,11 @@
           <button class="dialogue-option" data-choice="overdue">Show Overdue Loans</button>
           <button class="dialogue-option" data-choice="most">Most Borrowed</button>
           <button class="dialogue-option" data-choice="borrow">Borrow Book</button>
+          <button class="dialogue-option" data-choice="return">Return Book</button>
           <button class="dialogue-option" data-choice="create">Create Book</button>
         </div>
       </div>
-      <!-- Inline forms container for input (hidden by default) -->
+      <!-- Inline forms container for sequential input (hidden by default) -->
       <div class="dialogue-form-container" id="dialogue-form-container" style="display:none;">
         <!-- Borrow Book Form (sequential) -->
         <div id="borrow-form" class="dialogue-form" style="display:none;">
@@ -47,6 +48,14 @@
           <div id="borrow-question"></div>
           <input type="text" id="borrow-input" placeholder="">
           <button id="borrow-next">Next</button>
+          <button class="cancel-form">Cancel</button>
+        </div>
+        <!-- Return Book Form (sequential) -->
+        <div id="return-form" class="dialogue-form" style="display:none;">
+          <h3>Return a Book</h3>
+          <div id="return-question"></div>
+          <input type="text" id="return-input" placeholder="">
+          <button id="return-next">Next</button>
           <button class="cancel-form">Cancel</button>
         </div>
         <!-- Create Book Form (sequential) -->
