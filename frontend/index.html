@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anime Library Manager - Interactive Dialogue</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <img src="assets/anime-logo.png" alt="Anime Library Logo" class="logo">
+    <h1>Anime Library Manager</h1>
+  </header>
+
+  <!-- Main Character Section -->
+  <section class="character-section">
+    <img src="assets/character1.png" alt="Main Character" id="main-character">
+  </section>
+
+  <!-- Dialog Overlay (hidden by default) -->
+  <div id="dialog-overlay" class="hidden">
+    <div class="dialog-container">
+      <div class="character-portrait">
+        <img src="assets/character1.png" alt="Character Portrait">
+      </div>
+      <div class="dialog-menu">
+        <p id="dialog-text">Hello, welcome to our library adventure. What would you like to do?</p>
+        <div class="dialog-options">
+          <button class="dialog-option" data-choice="books">Show Available Books</button>
+          <button class="dialog-option" data-choice="students">Show Students</button>
+          <button class="dialog-option" data-choice="overdue">Show Overdue Loans</button>
+          <button class="dialog-option" data-choice="exit">Exit Conversation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Display Area -->
+  <section class="results">
+    <div id="results-container">
+      <!-- API results will appear here -->
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Anime Library Manager</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
