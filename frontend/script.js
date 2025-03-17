@@ -1,90 +1,158 @@
 // script.js
 
 // Base API URL for your Flask backend
-const BASE_API_URL = 'http://127.0.0.1:5000';
+const BASE_API_URL = 'http://khgb.pythonanywhere.com';
+
+// Global variables for sequential borrow form
+let borrowState = 0;  // 0: ask for Student ID, 1: ask for Book ID
+let storedMaHS = '';
+
+// Global variables for sequential create form
+let createState = 0;  // 0: ask for Book Title, 1: ask for Author, 2: ask for Genre, 3: ask for Quantity
+let createData = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Interactive dialog: Open dialog overlay when main character is clicked
-  const mainCharacter = document.getElementById('main-character');
-  const dialogOverlay = document.getElementById('dialog-overlay');
-
-  mainCharacter.addEventListener('click', () => {
-    dialogOverlay.classList.remove('hidden');
-  });
-
-  // Attach event listeners for dialog option buttons
-  const optionButtons = document.querySelectorAll('.dialog-option');
+  console.log("DOM fully loaded. Dialogue area is active.");
+  
+  // Attach event listeners for dialogue option buttons
+  const optionButtons = document.querySelectorAll('.dialogue-option');
   optionButtons.forEach(button => {
     button.addEventListener('click', (e) => {
       const choice = e.target.getAttribute('data-choice');
+      console.log("Dialogue option selected:", choice);
       handleDialogChoice(choice);
     });
   });
+  
+  // Attach event listener for borrow form "Next" button and input field for Enter key
+  const borrowInput = document.getElementById('borrow-input');
+  document.getElementById('borrow-next').addEventListener('click', handleBorrowNext);
+  borrowInput.addEventListener('keydown', (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleBorrowNext();
+    }
+  });
+  
+  // Attach event listener for create form "Next" button and input field for Enter key
+  const createInput = document.getElementById('create-input');
+  document.getElementById('create-next').addEventListener('click', handleCreateNext);
+  createInput.addEventListener('keydown', (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCreateNext();
+    }
+  });
+  
+  // Attach event listeners for cancel buttons
+  const cancelButtons = document.querySelectorAll('.cancel-form');
+  cancelButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggleForm(false);
+      showDialogueOptions();
+      resetBorrowForm();
+      resetCreateForm();
+    });
+  });
+  
+  // Initially load available books into the sidebar and refresh every 30 seconds
+  fetchBooks();
+  setInterval(fetchBooks, 30000);
 });
 
-// Handle dialog choices and call corresponding API functions
-function handleDialogChoice(choice) {
-  if (choice === 'books') {
-    fetchBooks();
-    closeDialog();
-  } else if (choice === 'students') {
-    fetchStudents();
-    closeDialog();
-  } else if (choice === 'overdue') {
-    fetchOverdue();
-    closeDialog();
-  } else if (choice === 'exit') {
-    closeDialog();
+// Function to toggle between dialogue options and form container
+function toggleForm(show) {
+  const formContainer = document.getElementById('dialogue-form-container');
+  const optionsContainer = document.getElementById('dialogue-options');
+  if (show) {
+    optionsContainer.style.display = 'none';
+    formContainer.style.display = 'block';
+  } else {
+    formContainer.style.display = 'none';
+    optionsContainer.style.display = 'block';
   }
 }
 
-// Hide the dialog overlay
-function closeDialog() {
-  document.getElementById('dialog-overlay').classList.add('hidden');
+// Handle dialogue choices and call corresponding API functions or show form
+function handleDialogChoice(choice) {
+  console.log("Handling dialogue choice:", choice);
+  if (choice === 'books') {
+    fetchBooks();
+  } else if (choice === 'students') {
+    fetchStudents();
+  } else if (choice === 'overdue') {
+    fetchOverdue();
+  } else if (choice === 'most') {
+    fetchMostBorrowed();
+  } else if (choice === 'borrow') {
+    // Show sequential borrow book form
+    toggleForm(true);
+    document.getElementById('borrow-form').style.display = 'block';
+    document.getElementById('create-form').style.display = 'none';
+    initBorrowForm();
+  } else if (choice === 'create') {
+    // Show sequential create book form
+    toggleForm(true);
+    document.getElementById('create-form').style.display = 'block';
+    document.getElementById('borrow-form').style.display = 'none';
+    initCreateForm();
+  } else {
+    console.log("Unknown dialogue choice:", choice);
+  }
 }
 
-// Utility to display API results in the results container
+// Utility: Display HTML content in the results container
 function displayResults(htmlContent) {
+  console.log("Displaying results...");
   const container = document.getElementById('results-container');
   container.innerHTML = htmlContent;
 }
 
-// Fetch available books from the backend
+// API function: Fetch available books and render in the sidebar
 function fetchBooks() {
+  console.log("Fetching available books from API for sidebar...");
   fetch(`${BASE_API_URL}/api/books`)
-    .then(response => response.json())
+    .then(response => {
+      console.log("Response received for books:", response);
+      return response.json();
+    })
     .then(data => {
-      let html = '<h3>Available Books</h3>';
+      console.log("Data received for books:", data);
+      let html = '<ul>';
       if (data.length === 0) {
-        html += '<p>No books available.</p>';
+        html += '<li>No books available.</li>';
       } else {
-        html += '<ul>';
         data.forEach(book => {
           html += `
             <li>
-              <img src="assets/book-icon.png" alt="Book Icon">
-              <div>
-                <strong>${book.TenSach}</strong><br>
-                <em>${book.TacGia || 'Unknown Author'}</em> - ${book.SoLuong} in stock
-              </div>
+              <strong>ID: ${book.MaSach}</strong> - ${book.TenSach}<br>
+              <em>${book.TacGia || 'Unknown Author'}</em> (${book.TheLoai || 'Unknown Genre'})<br>
+              Quantity: ${book.SoLuong}
             </li>
           `;
         });
-        html += '</ul>';
       }
-      displayResults(html);
+      html += '</ul>';
+      const container = document.getElementById('books-container');
+      container.innerHTML = html;
     })
     .catch(error => {
       console.error('Error fetching books:', error);
-      displayResults('<p>Error fetching books.</p>');
+      const container = document.getElementById('books-container');
+      container.innerHTML = '<p>Error fetching books.</p>';
     });
 }
 
-// Fetch list of students from the backend
+// API function: Fetch students
 function fetchStudents() {
+  console.log("Fetching students from API...");
   fetch(`${BASE_API_URL}/api/students`)
-    .then(response => response.json())
+    .then(response => {
+      console.log("Response received for students:", response);
+      return response.json();
+    })
     .then(data => {
+      console.log("Data received for students:", data);
       let html = '<h3>Students</h3>';
       if (data.length === 0) {
         html += '<p>No students found.</p>';
@@ -110,11 +178,16 @@ function fetchStudents() {
     });
 }
 
-// Fetch overdue loans from the backend
+// API function: Fetch overdue loans
 function fetchOverdue() {
+  console.log("Fetching overdue loans from API...");
   fetch(`${BASE_API_URL}/api/overdue`)
-    .then(response => response.json())
+    .then(response => {
+      console.log("Response received for overdue loans:", response);
+      return response.json();
+    })
     .then(data => {
+      console.log("Data received for overdue loans:", data);
       let html = '<h3>Overdue Loans</h3>';
       if (data.length === 0) {
         html += '<p>No overdue loans.</p>';
@@ -140,11 +213,16 @@ function fetchOverdue() {
     });
 }
 
-// Fetch the most borrowed book from the backend
+// API function: Fetch the most borrowed book
 function fetchMostBorrowed() {
+  console.log("Fetching the most borrowed book from API...");
   fetch(`${BASE_API_URL}/api/most_borrowed`)
-    .then(response => response.json())
+    .then(response => {
+      console.log("Response received for most borrowed book:", response);
+      return response.json();
+    })
     .then(data => {
+      console.log("Data received for most borrowed book:", data);
       let html = '<h3>Most Borrowed Book</h3>';
       if (!data.TenSach) {
         html += '<p>No data available.</p>';
@@ -158,3 +236,157 @@ function fetchMostBorrowed() {
       displayResults('<p>Error fetching most borrowed book.</p>');
     });
 }
+
+// -----------------------
+// Sequential Borrow Form Functions
+// -----------------------
+function initBorrowForm() {
+  borrowState = 0;
+  storedMaHS = "";
+  const inputField = document.getElementById('borrow-input');
+  document.getElementById('borrow-question').innerText = "Enter your Student ID (MaHS):";
+  inputField.value = "";
+  inputField.placeholder = "Student ID";
+}
+
+function handleBorrowNext() {
+  const inputField = document.getElementById('borrow-input');
+  const inputVal = inputField.value.trim();
+  if (borrowState === 0) {
+    if (!inputVal) {
+      alert("Please enter your Student ID.");
+      return;
+    }
+    storedMaHS = inputVal;
+    borrowState = 1;
+    document.getElementById('borrow-question').innerText = "Enter the Book ID (MaSach):";
+    inputField.value = "";
+    inputField.placeholder = "Book ID";
+  } else if (borrowState === 1) {
+    if (!inputVal) {
+      alert("Please enter the Book ID.");
+      return;
+    }
+    const maSach = inputVal;
+    console.log(`Borrowing book via sequential form: Student ID ${storedMaHS}, Book ID ${maSach}`);
+    fetch(`${BASE_API_URL}/api/borrow`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ MaHS: storedMaHS, MaSach: maSach })
+    })
+      .then(response => {
+        console.log("Response received for borrow:", response);
+        return response.json();
+      })
+      .then(data => {
+        console.log("Data received for borrow:", data);
+        if (data.error) {
+          alert("Error: " + data.error);
+        } else {
+          alert(data.message);
+        }
+        resetBorrowForm();
+        toggleForm(false);
+        showDialogueOptions();
+        fetchBooks();
+      })
+      .catch(error => {
+        console.error('Error borrowing book:', error);
+        alert("Error borrowing book.");
+      });
+  }
+}
+
+function resetBorrowForm() {
+  borrowState = 0;
+  storedMaHS = "";
+  const inputField = document.getElementById('borrow-input');
+  inputField.value = "";
+  inputField.placeholder = "Student ID";
+  document.getElementById('borrow-question').innerText = "";
+}
+
+// -----------------------
+// Sequential Create Form Functions
+// -----------------------
+function initCreateForm() {
+  createState = 0;
+  createData = {};
+  const inputField = document.getElementById('create-input');
+  document.getElementById('create-question').innerText = "Enter Book Title (TenSach):";
+  inputField.value = "";
+  inputField.placeholder = "Book Title";
+}
+
+function handleCreateNext() {
+  const inputField = document.getElementById('create-input');
+  const inputVal = inputField.value.trim();
+  if (createState === 0) {
+    if (!inputVal) {
+      alert("Please enter the Book Title.");
+      return;
+    }
+    createData.TenSach = inputVal;
+    createState = 1;
+    document.getElementById('create-question').innerText = "Enter Author (TacGia):";
+    inputField.value = "";
+    inputField.placeholder = "Author";
+  } else if (createState === 1) {
+    createData.TacGia = inputVal || "";
+    createState = 2;
+    document.getElementById('create-question').innerText = "Enter Genre (TheLoai):";
+    inputField.value = "";
+    inputField.placeholder = "Genre";
+  } else if (createState === 2) {
+    createData.TheLoai = inputVal || "";
+    createState = 3;
+    document.getElementById('create-question').innerText = "Enter Quantity (SoLuong):";
+    inputField.value = "";
+    inputField.placeholder = "Quantity";
+  } else if (createState === 3) {
+    createData.SoLuong = inputVal ? parseInt(inputVal) : 0;
+    // Now submit the create form data
+    console.log("Creating book with data:", createData);
+    fetch(`${BASE_API_URL}/api/create_book`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createData)
+    })
+      .then(response => {
+        console.log("Response received for create book:", response);
+        return response.json();
+      })
+      .then(data => {
+        console.log("Data received for create book:", data);
+        if (data.error) {
+          alert("Error: " + data.error);
+        } else {
+          alert(data.message);
+        }
+        resetCreateForm();
+        toggleForm(false);
+        showDialogueOptions();
+        fetchBooks();
+      })
+      .catch(error => {
+        console.error('Error creating book:', error);
+        alert("Error creating book.");
+      });
+  }
+}
+
+function resetCreateForm() {
+  createState = 0;
+  createData = {};
+  const inputField = document.getElementById('create-input');
+  inputField.value = "";
+  inputField.placeholder = "Book Title";
+  document.getElementById('create-question').innerText = "";
+}
+
+// Helper: Show dialogue options (when forms are canceled)
+function showDialogueOptions() {
+  document.getElementById('dialogue-options').style.display = 'block';
+}
+
+// Attach event listeners for Enter key on inputs already handled above.

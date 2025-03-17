@@ -1,13 +1,12 @@
 # app.py
-import sqlite3
 from flask import Flask, jsonify, g, request
-import flask
+from flask_cors import CORS  # Import Flask-CORS
 from datetime import datetime
 import os
+import sqlite3
 
-#check if flask is installed
-print("Flask version is {}".format(flask.__version__))
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Path to SQLite database file
 DATABASE = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'library.db')
@@ -147,6 +146,114 @@ def most_borrowed():
         return jsonify({'TenSach': result['TenSach'], 'SoLanMuon': result['SoLanMuon']})
     else:
         return jsonify({}), 404
+
+@app.route('/api/create_book', methods=['POST'])
+def create_book():
+    data = request.get_json()
+    ten_sach = data.get('TenSach')
+    tac_gia = data.get('TacGia')
+    the_loai = data.get('TheLoai')
+    so_luong = data.get('SoLuong', 0)  # Default to 0 if not provided
+
+    if not ten_sach:
+        return jsonify({'error': 'Book title (TenSach) is required'}), 400
+
+    db = get_db()
+    query = '''
+        INSERT INTO Sach (TenSach, TacGia, TheLoai, SoLuong)
+        VALUES (?, ?, ?, ?)
+    '''
+    cursor = db.execute(query, (ten_sach, tac_gia, the_loai, so_luong))
+    db.commit()
+    return jsonify({
+        'message': 'Book created successfully',
+        'MaSach': cursor.lastrowid
+    }), 201
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_panel():
+    # Check for password in query parameter
+    password_arg = request.args.get('password')
+    if password_arg != 'adminpanel':
+        return "Access Denied. Please visit /admin?password=adminpanel", 403
+
+    db = get_db()
+    cursor = db.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+    tables_list = [row['name'] for row in tables]
+    
+    result = None
+    error = None
+
+    if request.method == 'POST' and 'command' in request.form:
+        command = request.form.get('command')
+        if command:
+            try:
+                cursor = db.execute(command)
+                db.commit()
+                # If it's a SELECT command, fetch and show the results
+                if command.strip().upper().startswith('SELECT'):
+                    result = cursor.fetchall()
+                else:
+                    result = f"Command executed successfully. Rows affected: {cursor.rowcount}"
+            except Exception as e:
+                error = str(e)
+
+    html = """
+    <html>
+      <head>
+        <title>Admin Panel</title>
+        <style>
+          body { background: #111; color: #eee; font-family: sans-serif; padding: 20px; }
+          h1, h2 { color: #d23669; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #555; padding: 5px; text-align: left; }
+          textarea { width: 100%; }
+          input[type="submit"] { background: #d23669; border: none; color: #fff; padding: 10px 20px; cursor: pointer; }
+          input[type="submit"]:hover { background: #a12852; }
+        </style>
+      </head>
+      <body>
+        <h1>Admin Panel</h1>
+        <h2>Current Tables</h2>
+        <ul>
+    """
+    for table in tables_list:
+        html += f"<li>{table}</li>"
+    html += "</ul>"
+
+    html += """
+        <h2>Execute SQL Command</h2>
+        <form method="post">
+          <textarea name="command" rows="4" placeholder="Enter SQL command here"></textarea><br>
+          <input type="submit" value="Execute">
+        </form>
+    """
+    if error:
+        html += f"<p style='color:red;'>Error: {error}</p>"
+    if result:
+        if isinstance(result, list):
+            html += "<h3>Query Result:</h3><table><tr>"
+            if result:
+                keys = result[0].keys()
+                for key in keys:
+                    html += f"<th>{key}</th>"
+                html += "</tr>"
+                for row in result:
+                    html += "<tr>"
+                    for key in keys:
+                        html += f"<td>{row[key]}</td>"
+                    html += "</tr>"
+            else:
+                html += "<tr><td>No results</td></tr>"
+            html += "</table>"
+        else:
+            html += f"<p>{result}</p>"
+    html += "</body></html>"
+    return html
+
+
+
 
 # ---------------------------
 # Run the App

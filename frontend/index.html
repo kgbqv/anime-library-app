@@ -3,49 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Anime Library Manager - Interactive Dialogue</title>
+  <title>Anime Library Quest</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <img src="assets/anime-logo.png" alt="Anime Library Logo" class="logo">
-    <h1>Anime Library Manager</h1>
-  </header>
-
-  <!-- Main Character Section -->
-  <section class="character-section">
-    <img src="assets/character1.png" alt="Main Character" id="main-character">
-  </section>
-
-  <!-- Dialog Overlay (hidden by default) -->
-  <div id="dialog-overlay" class="hidden">
-    <div class="dialog-container">
-      <div class="character-portrait">
-        <img src="assets/character1.png" alt="Character Portrait">
-      </div>
-      <div class="dialog-menu">
-        <p id="dialog-text">Hello, welcome to our library adventure. What would you like to do?</p>
-        <div class="dialog-options">
-          <button class="dialog-option" data-choice="books">Show Available Books</button>
-          <button class="dialog-option" data-choice="students">Show Students</button>
-          <button class="dialog-option" data-choice="overdue">Show Overdue Loans</button>
-          <button class="dialog-option" data-choice="exit">Exit Conversation</button>
-        </div>
-      </div>
+  <!-- Fixed sidebar for available books -->
+  <aside class="sidebar">
+    <h2>Available Books</h2>
+    <div id="books-container">
+      <!-- Books will be rendered here via JavaScript -->
+    </div>
+  </aside>
+  
+  <!-- Main content area -->
+  <div class="main-content">
+    <div id="results-container">
+      <!-- API results will be displayed here -->
     </div>
   </div>
 
-  <!-- Results Display Area -->
-  <section class="results">
-    <div id="results-container">
-      <!-- API results will appear here -->
+  <!-- Dialogue area fixed at the bottom -->
+  <div class="dialogue-area">
+    <div class="dialogue-content">
+      <!-- Dialogue options column -->
+      <div class="dialogue-options" id="dialogue-options">
+        <p id="dialogue-line">
+          "Greetings, brave adventurer! What is your next move?"
+        </p>
+        <div class="options-buttons">
+          <button class="dialogue-option" data-choice="books">Show Books</button>
+          <button class="dialogue-option" data-choice="students">Show Students</button>
+          <button class="dialogue-option" data-choice="overdue">Show Overdue Loans</button>
+          <button class="dialogue-option" data-choice="most">Most Borrowed</button>
+          <button class="dialogue-option" data-choice="borrow">Borrow Book</button>
+          <button class="dialogue-option" data-choice="create">Create Book</button>
+        </div>
+      </div>
+      <!-- Inline forms container for input (hidden by default) -->
+      <div class="dialogue-form-container" id="dialogue-form-container" style="display:none;">
+        <!-- Borrow Book Form (sequential) -->
+        <div id="borrow-form" class="dialogue-form" style="display:none;">
+          <h3>Borrow a Book</h3>
+          <div id="borrow-question"></div>
+          <input type="text" id="borrow-input" placeholder="">
+          <button id="borrow-next">Next</button>
+          <button class="cancel-form">Cancel</button>
+        </div>
+        <!-- Create Book Form (sequential) -->
+        <div id="create-form" class="dialogue-form" style="display:none;">
+          <h3>Create a New Book</h3>
+          <div id="create-question"></div>
+          <input type="text" id="create-input" placeholder="">
+          <button id="create-next">Next</button>
+          <button class="cancel-form">Cancel</button>
+        </div>
+      </div>
+      <!-- Character image pinned in dialogue area -->
+      <div class="character-image">
+        <img src="assets/character1.png" alt="Main Character">
+      </div>
     </div>
-  </section>
-
-  <footer>
-    <p>&copy; 2025 Anime Library Manager</p>
-  </footer>
-
+  </div>
+  
   <script src="script.js"></script>
 </body>
 </html>

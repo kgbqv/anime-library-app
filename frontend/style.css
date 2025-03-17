@@ -1,161 +1,217 @@
-/* style.css */
+/* Import a retro, game-style font */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* Global Styles */
+/* Global styles with border-box */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #fefefe;
-    color: #333;
-  }
-  
-  header {
-    background-color: #ffcc00;
-    display: flex;
-    align-items: center;
-    padding: 10px 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  header .logo {
-    height: 50px;
-    margin-right: 15px;
-  }
-  
-  header h1 {
-    margin: 0;
-    font-size: 1.8em;
-  }
-  
-  /* Main Character Section */
-  .character-section {
-    text-align: center;
-    margin: 20px 0;
-  }
-  
-  .character-section img {
-    max-width: 300px;
-    width: 100%;
-    height: auto;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-  }
-  
-  .character-section img:hover {
-    transform: scale(1.05);
-  }
-  
-  /* Dialog Overlay Styles */
-  .hidden {
-    display: none;
-  }
-  
-  #dialog-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  
-  .dialog-container {
-    background: #fff;
-    border-radius: 10px;
-    display: flex;
-    padding: 20px;
-    max-width: 800px;
-    width: 90%;
-    animation: zoomIn 0.5s ease-out forwards;
-  }
-  
-  @keyframes zoomIn {
-    from {
-      transform: scale(0.7);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  
-  .character-portrait {
-    flex: 0 0 40%;
-    perspective: 800px;
-    margin-right: 20px;
-  }
-  
-  .character-portrait img {
-    width: 100%;
-    border-radius: 10px;
-    transform: rotateY(10deg);
-  }
-  
-  .dialog-menu {
-    flex: 1;
-  }
-  
-  .dialog-menu p {
-    font-size: 1.2em;
-    margin-bottom: 15px;
-  }
-  
-  .dialog-options button {
-    background-color: #d23669;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    margin: 5px;
-    font-size: 1em;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .dialog-options button:hover {
-    background-color: #a12852;
-  }
-  
-  /* Results Area */
-  .results {
-    padding: 20px;
-  }
-  
-  #results-container {
-    margin-top: 10px;
-  }
-  
-  #results-container ul {
-    list-style: none;
-    padding: 0;
-  }
-  
-  #results-container li {
-    background-color: #fff3e0;
-    margin-bottom: 10px;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-  }
-  
-  #results-container li img {
-    height: 40px;
-    margin-right: 10px;
-  }
-  
-  /* Footer */
-  footer {
-    text-align: center;
-    padding: 10px;
-    background-color: #ffcc00;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
-  }
-  
+  margin: 0;
+  font-family: 'Press Start 2P', cursive, sans-serif;
+  background-color: #111;
+  color: #eee;
+}
+
+/* Fixed Sidebar for Books */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 25%;
+  background-color: #222;
+  padding: 10px;
+  overflow-y: auto;
+  border-right: 2px solid #444;
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-top: 0;
+  font-size: 1em;
+}
+
+#books-container {
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+/* Main content area: centered with a max-width */
+.main-content {
+  margin-left: 25%;
+  padding: 20px;
+  overflow-y: auto;
+  max-width: 800px;
+  margin-right: auto;
+  min-height: calc(100vh - 150px); /* leave room for dialogue area */
+}
+
+/* Dialogue area fixed at the bottom, spanning full width excluding sidebar */
+.dialogue-area {
+  position: fixed;
+  bottom: 0;
+  left: 25%;  /* starts after sidebar */
+  right: 0;
+  background-color: #333;
+  border-top: 2px solid #555;
+  display: flex;
+  align-items: flex-start;
+  height: 150px; /* Fixed height */
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Dialogue content arranged in columns */
+.dialogue-content {
+  display: flex;
+  width: 100%;
+}
+
+/* Dialogue options column */
+.dialogue-options {
+  flex: 1;
+  padding-right: 10px;
+  overflow-y: auto;
+  max-height: 150px;
+}
+
+.dialogue-options p {
+  margin: 0 0 10px 0;
+  font-size: 0.8em;
+  line-height: 1.2em;
+}
+
+.options-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.options-buttons button {
+  flex: 1 1 calc(50% - 5px);
+  background-color: #d23669;
+  border: 2px solid #fff;
+  color: #fff;
+  padding: 8px;
+  font-size: 0.7em;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 2px 2px 0px #000;
+}
+
+.options-buttons button:hover {
+  background-color: #a12852;
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0px #000;
+}
+
+/* Dialogue form container */
+.dialogue-form-container {
+  flex: 1;
+  padding-right: 10px;
+  overflow-y: auto;
+  max-height: 150px;
+  display: none; /* Hidden by default */
+}
+
+.dialogue-form {
+  background-color: #444;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
+
+.dialogue-form h3 {
+  font-size: 0.9em;
+  margin: 0 0 10px 0;
+}
+
+.dialogue-form input {
+  width: 90%;
+  padding: 3px;
+  margin-bottom: 8px;
+  font-size: 0.7em;
+}
+
+/* Cancel button styling */
+.cancel-form {
+  background-color: #777;
+  border: 2px solid #fff;
+  color: #fff;
+  padding: 5px;
+  font-size: 0.7em;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  margin-top: 5px;
+}
+
+.cancel-form:hover {
+  background-color: #555;
+  transform: translateY(-2px);
+}
+
+/* Character image pinned in dialogue area; forced square */
+.character-image {
+  width: 120px;
+  height: 120px; /* Square */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.character-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 2px solid #777;
+  border-radius: 5px;
+}
+
+/* Results area styling */
+#results-container {
+  background-color: #222;
+  border: 2px solid #444;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 150px; /* leave room for dialogue area */
+}
+
+#results-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#results-container li {
+  background-color: #333;
+  margin: 10px 0;
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid #555;
+  display: flex;
+  align-items: center;
+}
+
+#results-container li img {
+  height: 40px;
+  margin-right: 10px;
+}
+
+/* Footer */
+footer {
+  background-color: #222;
+  text-align: center;
+  padding: 10px;
+  border-top: 2px solid #444;
+  color: #ccc;
+  font-size: 0.8em;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  left: 25%;
+}
