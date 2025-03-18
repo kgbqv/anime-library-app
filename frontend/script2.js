@@ -18,7 +18,7 @@ document.getElementById("loginForm")?.addEventListener("submit", async function 
     if (response.ok) {
         localStorage.setItem("MaHS", result.MaHS);
         localStorage.setItem("TenHS", result.TenHS);
-        window.location.href = "edit.html";
+        window.location.href = "index.html";
     }
 });
 
@@ -42,7 +42,7 @@ document.getElementById("registerForm")?.addEventListener("submit", async functi
     document.getElementById("registerMessage").innerText = result.message || result.error;
 
     if (response.ok) {
-        window.location.href = "login.html";
+        window.location.href = "register.html";
     }
 });
 

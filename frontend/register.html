@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anime Library Quest</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h2>Register</h2>
+  <!-- Fixed sidebar for available books -->
+  <aside class="sidebar">
+    <h2>Register</h2>
         <form id="registerForm">
             <input type="text" id="registerMaHS" placeholder="Mã học sinh">
             <input type="text" id="registerTenHS" placeholder="Tên học sinh" required>
@@ -20,7 +21,48 @@
         </form>
         <p>Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
         <p id="registerMessage"></p>
-    </div>
     <script src="script2.js"></script>
+  </aside>
+  
+  <div class="main-content" style="background-color: antiquewhite;">
+    <!-- canvas that fills the div -->
+    <canvas id="canvas" width=100% height="100%"></canvas>
+    <!-- draw something-->
+    <script>
+      //change canvas size to fill the div
+        const canvas = document.getElementById('canvas');
+        const parentDiv = document.querySelector('.main-content');
+        const ctx = canvas.getContext('2d');
+        // restart the canvas size when the window is resized
+        window.addEventListener('resize', () => {
+            canvas.width = parentDiv.clientWidth;
+            canvas.height = parentDiv.clientHeight;
+            ctx.fillStyle = 'red';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            //blue border
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        });
+    </script>
+  </div>
+
+  <!-- Dialogue area fixed at the bottom -->
+  <div class="dialogue-area">
+    <div class="dialogue-content">
+      <!-- Dialogue options column -->
+      <div class="dialogue-options" id="dialogue-options">
+        <p id="dialogue-line">
+          "Welcome. Or welcome back. Mind telling me who you are?"
+        </p>
+      </div>     
+      <div class="character-image">
+        <img src="assets/character1.png" alt="Main Character">
+      </div>
+    </div>
+  </div>
+  
+  <script src="script.js"></script>
 </body>
 </html>

@@ -7,23 +7,78 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="name-container" style="position: fixed; top: 0; right: 0; padding: 0.5rem;">
+
+    </div>
+    <script>
+      const TenHS = localStorage.getItem('TenHS');
+      const nameContainer = document.getElementById('name-container');
+      if (TenHS) {
+        nameContainer.innerHTML = `
+          <p>${TenHS}</p>
+        `;
+      } else {
+        nameContainer.innerHTML = `
+          <p>Guest</p>
+        `;
+      }
+    </script>
   <!-- Fixed sidebar for available books -->
-  <aside class="sidebar">
+  <aside class="sidebar" style="height: 100vh; display: flex; flex-direction: column;">
     <h2>Available Books</h2>
-    <div id="books-container">
+    <!--maximize height-->
+    <div id="books-container" style="display: flex; flex-direction: column; height: 100%;">
       <!-- Books will be rendered here via JavaScript -->
     </div>
+    
+    <div id="buttons-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height:fit-content;">
+      <button id="loginButton">Login</button>
+      <button id="logoutButton" style="display:none;">Logout</button>
+      <script>
+        const loginButton = document.getElementById('loginButton');
+        const logoutButton = document.getElementById('logoutButton');
+        const MaHS = localStorage.getItem('MaHS');
+        if (MaHS) {
+          loginButton.style.display = 'none';
+          logoutButton.style.display = 'block';
+        } else {
+          loginButton.style.display = 'block';
+          logoutButton.style.display = 'none';
+        }
+        loginButton.addEventListener('click', () => {
+          window.location.href = 'login.html';
+        });
+        logoutButton.addEventListener('click', () => {
+            dialogues = document.getElementById('dialogue-options');
+            dialogues.innerHTML = `
+            <p id="dialogue-line">Farewell. Return to the library if you have time.</p>
+            <div class="options-buttons">
+              <button class="dialogue-option" data-choice="books">Show Books</button>
+              <button class="dialogue-option" data-choice="students">Show Students</button>
+              <button class="dialogue-option" data-choice="overdue">Show Overdue Loans</button>
+              <button class="dialogue-option" data-choice="most">Most Borrowed</button>
+              <button class="dialogue-option" data-choice="borrow">Borrow Book</button>
+              <button class="dialogue-option" data-choice="return">Return Book</button>
+              <button class="dialogue-option" data-choice="create">Create Book</button>
+            </div>
+            `;
+            localStorage.removeItem('MaHS');
+            localStorage.removeItem('TenHS');
+            loginButton.style.display = 'block';
+            logoutButton.style.display = 'none';
+            window.location.href = 'index.html';
+        });
+      </script>
   </aside>
   
   <!-- Main content area -->
-  <div class="main-content">
-    <div id="results-container">
-      <!-- API results will be displayed here -->
-    </div>
+  <div class="main-content" style="background-color: antiquewhite;">
+    <canvas id="canvas" width=100% height="100%"></canvas>
   </div>
+  <script src="game.js"></script>
 
   <!-- Dialogue area fixed at the bottom -->
-  <div class="dialogue-area">
+  <div class="dialogue-area" style="position: fixed; bottom: 0;">
     <div class="dialogue-content">
       <!-- Dialogue options column -->
       <div class="dialogue-options" id="dialogue-options">
