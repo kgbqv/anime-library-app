@@ -175,13 +175,13 @@ def admin_panel():
     # Check for password in query parameter
     password_arg = request.args.get('password')
     if password_arg != 'adminpanel':
-        return "Access Denied. Please visit /admin?password=adminpanel", 403
+        return "Access Denied.", 403
 
     db = get_db()
     cursor = db.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
     tables_list = [row['name'] for row in tables]
-    
+
     result = None
     error = None
 
@@ -253,11 +253,69 @@ def admin_panel():
     return html
 
 
+@app.route('/api/borrow', methods=['POST'])
+def borrow_book():
+    data = request.get_json()
+    ma_hs = data.get('MaHS')
+    ma_sach = data.get('MaSach')
+    if not ma_hs or not ma_sach:
+        return jsonify({'error': 'Missing Student ID (MaHS) or Book ID (MaSach)'}), 400
+    db = get_db()
+    try:
+        cursor = db.execute('SELECT SoLuong FROM Sach WHERE MaSach = ?', (ma_sach,))
+        book = cursor.fetchone()
+        if not book or book['SoLuong'] <= 0:
+            return jsonify({'error': 'Book not available'}), 400
+        new_quantity = book['SoLuong'] - 1
+        db.execute('UPDATE Sach SET SoLuong = ? WHERE MaSach = ?', (new_quantity, ma_sach))
+        borrow_cursor = db.execute(
+            'INSERT INTO MuonSach (MaHS, MaSach, NgayMuon, TrangThai) VALUES (?, ?, datetime("now"), "Chưa trả")',
+            (ma_hs, ma_sach)
+        )
+        db.commit()
+        return jsonify({'message': 'Book borrowed successfully', 'MaMuon': borrow_cursor.lastrowid}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+@app.route('/api/return', methods=['POST'])
+def return_book():
+    data = request.get_json()
+    ma_hs = data.get('MaHS')
+    ma_sach = data.get('MaSach')
+    if not ma_hs or not ma_sach:
+        return jsonify({'error': 'Missing Student ID (MaHS) or Book ID (MaSach)'}), 400
+    db = get_db()
+    try:
+        cursor = db.execute(
+            'SELECT MaMuon FROM MuonSach WHERE MaHS = ? AND MaSach = ? AND TrangThai = "Chưa trả"',
+            (ma_hs, ma_sach)
+        )
+        record = cursor.fetchone()
+        if not record:
+            return jsonify({'error': 'No outstanding borrow record found'}), 400
+        db.execute(
+            'UPDATE MuonSach SET TrangThai = "Đã trả", NgayTra = datetime("now") WHERE MaMuon = ?',
+            (record['MaMuon'],)
+        )
+        cursor = db.execute('SELECT SoLuong FROM Sach WHERE MaSach = ?', (ma_sach,))
+        book = cursor.fetchone()
+        new_quantity = book['SoLuong'] + 1 if book else 0
+        db.execute('UPDATE Sach SET SoLuong = ? WHERE MaSach = ?', (new_quantity, ma_sach))
+        db.commit()
+        return jsonify({'message': 'Book returned successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ---------------------------
-# Run the App
+# Visitor Logging Endpoint
 # ---------------------------
+@app.route('/log_visit', methods=['POST'])
+def log_visit():
+    ip = request.remote_addr
+    timestamp = datetime.utcnow().isoformat()
+    app.logger.info("Visitor logged: IP: %s at %s", ip, timestamp)
+    return jsonify({"message": "Visit logged"}), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
