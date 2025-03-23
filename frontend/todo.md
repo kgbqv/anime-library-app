@@ -1,0 +1,3 @@
+- email
+- ai-integration
+- switch results div over to the sidebar
