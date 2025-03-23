@@ -1,3 +1,4 @@
 - email
 - ai-integration
 - switch results div over to the sidebar
+- implement this in https://github.com/RonenNess/RPGUI/blob/master/dist/rpgui.min.css
