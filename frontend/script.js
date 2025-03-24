@@ -8,17 +8,10 @@ function showDialogueOptions() {
 // Base API URL for your Flask backend (use HTTPS if needed)
 const BASE_API_URL = 'https://khgb.pythonanywhere.com';
 
-// Global variables for sequential borrow form
-let borrowState = 0;  // 0: ask for Student ID, 1: ask for Book ID
-let storedMaHS = '';
-
 // Global variables for sequential create form
 let createState = 0;  // 0: Book Title, 1: Author, 2: Genre, 3: Quantity
 let createData = {};
 
-// Global variables for sequential return form
-let returnState = 0;  // 0: ask for Student ID, 1: ask for Book ID
-let storedReturnMaHS = '';
 
 dialog = document.getElementById("dialogue-line");
 
@@ -169,7 +162,7 @@ function handleDialogChoice(choice) {
 // Utility: Display HTML content in the results container
 function displayResults(htmlContent) {
   console.log("Displaying results...");
-  const container = document.getElementById('results-container');
+  const container = document.getElementById('books-container');
   container.innerHTML = htmlContent;
 }
 
@@ -183,9 +176,9 @@ function fetchBooks() {
     })
     .then(data => {
       console.log("Data received for books:", data);
-      let html = '<ul>';
+      let html = '<h3>Available Books</h3><ul>';
       if (data.length === 0) {
-        html += '<li>No books available.</li>';
+        html += '<li>None</li>';
       } else {
         data.forEach(book => {
           html += `
@@ -302,36 +295,29 @@ function fetchMostBorrowed() {
     });
 }
 
-// -----------------------
-// Sequential Borrow Form Functions
-// -----------------------
 function initBorrowForm() {
-  borrowState = 0;
-  storedMaHS = "";
-  const inputField = document.getElementById('borrow-input');
-  document.getElementById('borrow-question').innerText = "Enter your Student ID (MaHS):";
-  inputField.value = "";
-  inputField.placeholder = "Student ID";
+  const userID = localStorage.getItem('MaHS');
+  if (userID) {
+    const inputField = document.getElementById('borrow-input');
+    document.getElementById('borrow-question').innerText = "Enter the Book ID (MaSach):";
+    inputField.value = "";
+    inputField.placeholder = "Book ID";
+  } else {
+    showText("Please log in to borrow books.");
+    toggleForm(false);
+    showDialogueOptions();
+  }
 }
 
 function handleBorrowNext() {
   const inputField = document.getElementById('borrow-input');
   const inputVal = inputField.value.trim();
-  if (borrowState === 0) {
-    if (!inputVal) {
-      showText("Please enter your Student ID.");
-      return;
-    }
-    storedMaHS = inputVal;
-    borrowState = 1;
-    document.getElementById('borrow-question').innerText = "Enter the Book ID (MaSach):";
-    inputField.value = "";
-    inputField.placeholder = "Book ID";
-  } else if (borrowState === 1) {
+  if (true){
     if (!inputVal) {
       showText("Please enter the Book ID.");
       return;
     }
+    storedMaHS = localStorage.getItem('MaHS');
     const maSach = inputVal;
     console.log(`Borrowing book via sequential form: Student ID ${storedMaHS}, Book ID ${maSach}`);
     fetch(`${BASE_API_URL}/api/borrow`, {
@@ -371,32 +357,25 @@ function resetBorrowForm() {
   document.getElementById('borrow-question').innerText = "";
 }
 
-// -----------------------
-// Sequential Return Form Functions
-// -----------------------
 function initReturnForm() {
-  returnState = 0;
-  storedReturnMaHS = "";
   const inputField = document.getElementById('return-input');
-  document.getElementById('return-question').innerText = "Enter your Student ID (MaHS):";
+  const userID = localStorage.getItem('MaHS');
+  if (userID) {
+  document.getElementById('return-question').innerText = "Enter the Book ID (MaSach):";
   inputField.value = "";
-  inputField.placeholder = "Student ID";
+  inputField.placeholder = "Book ID";
+  } else {
+    showText("Please log in to return books.");
+    toggleForm(false);
+    showDialogueOptions();
+  }
 }
 
 function handleReturnNext() {
   const inputField = document.getElementById('return-input');
   const inputVal = inputField.value.trim();
-  if (returnState === 0) {
-    if (!inputVal) {
-      showText("Please enter your Student ID.");
-      return;
-    }
-    storedReturnMaHS = inputVal;
-    returnState = 1;
-    document.getElementById('return-question').innerText = "Enter the Book ID (MaSach):";
-    inputField.value = "";
-    inputField.placeholder = "Book ID";
-  } else if (returnState === 1) {
+  storedReturnMaHS = localStorage.getItem('MaHS');
+  if (true) {
     if (!inputVal) {
       showText("Please enter the Book ID.");
       return;
