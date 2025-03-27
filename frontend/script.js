@@ -183,9 +183,12 @@ function fetchBooks() {
         data.forEach(book => {
           html += `
             <li>
-              <strong>ID: ${book.MaSach}</strong> - ${book.TenSach}<br>
-              <em>${book.TacGia || 'Unknown Author'}</em> (${book.TheLoai || 'Unknown Genre'})<br>
+              <strong>ID: ${book.MaSach}</strong> <br> <br> ${book.TenSach}
+              <br> <br>
+              <em>${book.TacGia || 'Unknown Author'}</em> (${book.TheLoai || 'Unknown Genre'}) <br>
+              <br>
               Quantity: ${book.SoLuong}
+              <hr>
             </li>
           `;
         });
@@ -495,3 +498,14 @@ function resetCreateForm() {
   inputField.placeholder = "Book Title";
   document.getElementById('create-question').innerText = "";
 }
+
+// Preload the audio file
+const clickSound = new Audio('./assets/click_sound_1.mp3');
+
+// Attach event listener to all buttons
+document.querySelectorAll('button').forEach(button => {
+  button.addEventListener('click', () => {
+    clickSound.currentTime = 0; // Reset sound to start
+    clickSound.play().catch(error => console.error("Sound play failed:", error));
+  });
+});

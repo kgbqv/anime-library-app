@@ -189,3 +189,7 @@ footer {
   gap: 10px;
   padding: 10px;
 }
+
+li {
+  padding: 5px;
+}

@@ -24,29 +24,10 @@
     <script src="script2.js"></script>
   </aside>
   
-  <div class="main-content" style="background-color: antiquewhite;">
-    <!-- canvas that fills the div -->
+  <div class="main-content" style="background-color: rgb(68, 44, 12);">
     <canvas id="canvas" width=100% height="100%"></canvas>
-    <!-- draw something-->
-    <script>
-      //change canvas size to fill the div
-        const canvas = document.getElementById('canvas');
-        const parentDiv = document.querySelector('.main-content');
-        const ctx = canvas.getContext('2d');
-        // restart the canvas size when the window is resized
-        window.addEventListener('resize', () => {
-            canvas.width = parentDiv.clientWidth;
-            canvas.height = parentDiv.clientHeight;
-            ctx.fillStyle = 'red';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            //blue border
-            ctx.strokeStyle = 'blue';
-            ctx.lineWidth = 10;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-        });
-    </script>
   </div>
+  <script src="game.js"></script>
 
   <!-- Dialogue area fixed at the bottom -->
   <div class="dialogue-area">
