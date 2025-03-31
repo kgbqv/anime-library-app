@@ -166,6 +166,58 @@ function displayResults(htmlContent) {
   container.innerHTML = htmlContent;
 }
 
+// Function to parse the search input and fetch filtered books
+function fetchFilteredBooks(){
+  const searchBar = document.getElementById('searchFilter');
+  const searchTerm = searchBar.value;  // Use .value, not .value()
+  const regex = /(\w+):'([^']+)'/g;
+  let match;
+  let filters = { genres: [], authors: [] };
+  
+  // Parse the input string for key:'value' pairs
+  while ((match = regex.exec(searchTerm)) !== null) {
+    const key = match[1].toLowerCase();
+    const value = match[2];
+    if(key === 'genre'){
+      filters.genres.push(value);
+    } else if(key === 'author'){
+      filters.authors.push(value);
+    }
+  }
+  console.log("Filters parsed:", filters);
+  
+  // Call the filter API endpoint with the filters as JSON payload
+  fetch(`${BASE_API_URL}/api/filter_books`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(filters)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("Filtered books data:", data);
+    let html = '<h3>Filtered Books</h3><ul>';
+    if(data.length === 0) {
+      html += '<li>No books found.</li>';
+    } else {
+      data.forEach(book => {
+        html += `<li>
+                   <strong>ID: ${book.MaSach}</strong><br>
+                   ${book.TenSach}<br>
+                   <em>${book.TacGia || 'Unknown Author'}</em> (${book.TheLoai || 'Unknown Genre'})<br>
+                   Quantity: ${book.SoLuong}
+                 </li>`;
+      });
+    }
+    html += '</ul>';
+    document.getElementById('books-container').innerHTML = html;
+  })
+  .catch(error => console.error("Error fetching filtered books:", error));
+}
+
+// Attach event listener to the filter button
+document.getElementById('searchButton').addEventListener('click', fetchFilteredBooks);
+
+
 // API function: Fetch available books and render in the sidebar
 function fetchBooks() {
   console.log("Fetching available books from API for sidebar...");
@@ -176,7 +228,13 @@ function fetchBooks() {
     })
     .then(data => {
       console.log("Data received for books:", data);
-      let html = '<h3>Available Books</h3><ul>';
+      let html = `<div class="filter-container" style="display: flex; flex-direction: column; position: fixed; top: 0; left: 0; padding: 10px; background-color: #222; width: 25%; height: 15%; z-index: 1000;">
+      <label for="genreFilter">Search:</label> <br>
+      <input type="text" id="searchFilter" placeholder="genre:'action' author:'John Doe'" style="width: 100%;"> <br>
+      <button id="searchButton" onclick="fetchFilteredBooks();"> Search </button>
+    </div> 
+    <div id="margin" style="margin-top: 30%;"></div>
+    <h3>Books in library</h3>`;
       if (data.length === 0) {
         html += '<li>None</li>';
       } else {
