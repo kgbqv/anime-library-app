@@ -1,14 +1,101 @@
-# app.py
-from flask import Flask, jsonify, g, request
-from flask_cors import CORS  # Import Flask-CORS
-from datetime import datetime
-import os
+import pandas as pd
+from flask import Flask, jsonify, request, g
 import sqlite3
+import os
+from datetime import datetime
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_mail import Mail,Message
+from email_helper import registration_email, borrow_email, return_email
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Path to SQLite database file
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = 'voainlp@gmail.com'
+app.config['MAIL_PASSWORD'] = 'insert app password here'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
+mail = Mail(app)
+
+
+
+def send_email(to, subject, body, html):
+    msg = Message(
+        subject=subject,
+        sender='voainlp@gmail.com',  # Ensure this matches MAIL_USERNAME
+        recipients=[to]
+    )
+    msg.body = body
+    msg.html = html
+    mail.send(msg)
+
+def load_quotes():
+    df = pd.read_csv('mysite/quotes.csv')
+    df['category'] = df['tags'].apply(lambda x: str(x).split(';'))
+    df = df.drop('tags', axis=1)
+    return df
+
+df_quotes = load_quotes()
+
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        'message': 'Welcome to the Quote API. Use the /random-quote endpoint to get a random quote.'
+    })
+
+@app.route('/random-quote', methods=['GET'])
+def random_quote():
+    random_row = df_quotes.sample(n=1).iloc[0]
+    return jsonify({
+        'id': str(random_row['index']),
+        'quote': random_row['quote'],
+        'author': random_row['author'],
+        'category': random_row['category']
+    })
+
+@app.route('/search', methods=['POST'])
+def search_quote():
+    query = request.get_json().get('query', '')
+
+    filtered_df = df_quotes[
+        df_quotes['quote'].str.contains(query, case=False, na=False) |
+        df_quotes['category'].apply(lambda categories: any(query in category.lower() for category in categories))
+    ]
+
+    if not filtered_df.empty:
+        filtered_df.sort_values('likes', inplace=True,ascending=False)
+        random_row = filtered_df.sample(n=1).iloc[0]
+        return jsonify({
+            'id': str(random_row['index']),
+            'quote': random_row['quote'],
+            'author': random_row['author'],
+            'category': random_row['category']
+        })
+    else:
+        return jsonify({"error": "No matching quotes found."})
+
+@app.route('/fetch-quote', methods=['POST'])
+def fetch_quote():
+    quote_id = request.get_json().get('id', '')
+
+    filtered_df = df_quotes[
+        df_quotes['index'] == int(quote_id)
+    ]
+
+    if not filtered_df.empty:
+        random_row = filtered_df.iloc[0]
+        return jsonify({
+            'id': str(random_row['index']),
+            'quote': random_row['quote'],
+            'author': random_row['author'],
+            'category': random_row['category']
+        })
+    else:
+        return jsonify({"error": "Quote not found."})
+
 DATABASE = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'library.db')
 
 def get_db():
@@ -41,10 +128,12 @@ def init_db():
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS HocSinh (
-            MaHS INTEGER PRIMARY KEY AUTOINCREMENT,
+            MaHS INTEGER PRIMARY KEY,
             TenHS TEXT NOT NULL,
             Lop TEXT,
-            SoDienThoai TEXT
+            SoDienThoai TEXT,
+            Email TEXT,
+            password TEXT NOT NULL
         )
     ''')
     cursor.execute('''
@@ -63,6 +152,122 @@ def init_db():
 
 with app.app_context():
     init_db()
+
+def get_email_by_mahs(mahs):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('SELECT Email FROM HocSinh WHERE MaHS = ?', (mahs,))
+    result = cursor.fetchone()
+    return result[0] if result else None
+
+def get_ten_by_mahs(mahs):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('SELECT TenHS FROM HocSinh WHERE MaHS = ?', (mahs,))
+    result = cursor.fetchone()
+    return result[0] if result else None
+
+def get_tensach_by_masach(masach):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('SELECT TenSach FROM Sach WHERE MaSach = ?', (masach,))
+    result = cursor.fetchone()
+    return result[0] if result else None
+
+
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    mahs = data.get('MaHS')
+    tenhs = data.get('TenHS')
+    lop = data.get('Lop')
+    sodienthoai = data.get('SoDienThoai')
+    email = data.get('Email')
+    password = data.get('password')
+    if not mahs or not password:
+        return jsonify({"error": "MaHS and password are required"}), 400
+
+    hashed_pw = generate_password_hash(password, method='sha256')
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT INTO HocSinh (MaHS, TenHS, Lop, SoDienThoai, Email, password) VALUES (?, ?, ?, ?, ?, ?)",
+            (mahs, tenhs, lop, sodienthoai, email, hashed_pw)
+        )
+        db.commit()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    email_content = registration_email(tenhs)
+    response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
+    return jsonify({"message": "Registration successful"}), 201
+
+# ---------------------------
+# Login Endpoint
+# ---------------------------
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    mahs = data.get('MaHS')
+    password = data.get('password')
+    if not mahs or not password:
+        return jsonify({"error": "MaHS and password are required"}), 400
+
+    db = get_db()
+    cursor = db.execute("SELECT * FROM HocSinh WHERE MaHS = ?", (mahs,))
+    user = cursor.fetchone()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if check_password_hash(user['password'], password):
+        # In a real app, you would create a session or token here.
+        return jsonify({"message": "Login successful", "MaHS": user["MaHS"], "TenHS": user["TenHS"]}), 200
+    else:
+        return jsonify({"error": "Incorrect password"}), 401
+
+# ---------------------------
+# Edit Info Endpoint
+# ---------------------------
+@app.route('/edit_info', methods=['POST'])
+def edit_info():
+    data = request.get_json()
+    mahs = data.get('MaHS')
+    if not mahs:
+        return jsonify({"error": "MaHS is required"}), 400
+
+    # Only update fields that are provided
+    fields = []
+    params = []
+    if data.get('TenHS'):
+        fields.append("TenHS = ?")
+        params.append(data.get('TenHS'))
+    if data.get('Lop'):
+        fields.append("Lop = ?")
+        params.append(data.get('Lop'))
+    if data.get('SoDienThoai'):
+        fields.append("SoDienThoai = ?")
+        params.append(data.get('SoDienThoai'))
+    if data.get('Email'):
+        fields.append("Email = ?")
+        params.append(data.get('Email'))
+    if data.get('password'):
+        hashed_pw = generate_password_hash(data.get('password'), method='sha256')
+        fields.append("password = ?")
+        params.append(hashed_pw)
+    if not fields:
+        return jsonify({"error": "No fields to update"}), 400
+    params.append(mahs)
+
+    db = get_db()
+    try:
+        query = "UPDATE HocSinh SET " + ", ".join(fields) + " WHERE MaHS = ?"
+        db.execute(query, tuple(params))
+        db.commit()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"message": "User info updated successfully"}), 200
+
 
 # ---------------------------
 # API Endpoints
@@ -147,6 +352,53 @@ def most_borrowed():
     else:
         return jsonify({}), 404
 
+@app.route('/api/metadata', methods=['GET'])
+def get_metadata():
+    db = get_db()
+    cursor = db.execute('SELECT DISTINCT TheLoai FROM Sach')
+    genres = [row['TheLoai'] for row in cursor.fetchall()]
+    cursor = db.execute('SELECT DISTINCT TacGia FROM Sach')
+    authors = [row['TacGia'] for row in cursor.fetchall()]
+    print(f"Fetched genres: {genres}")
+    print(f"Fetched authors: {authors}")
+    return jsonify({'genres': genres, 'authors': authors})
+
+@app.route('/api/filter_books', methods=['POST'])
+def filter_books():
+    data = request.get_json() or {}
+    genres_list = data.get('genres', [])
+    authors_list = data.get('authors', [])
+
+    db = get_db()
+    # Base query returns all books when no filter is applied.
+    query = "SELECT * FROM Sach WHERE 1=1"
+    params = []
+
+    if genres_list:
+        placeholders = ','.join('?' for _ in genres_list)
+        query += f" AND TheLoai IN ({placeholders})"
+        params.extend(genres_list)
+    if authors_list:
+        placeholders = ','.join('?' for _ in authors_list)
+        query += f" AND TacGia IN ({placeholders})"
+        params.extend(authors_list)
+
+    cursor = db.execute(query, tuple(params))
+    books = cursor.fetchall()
+
+    result = []
+    for book in books:
+        result.append({
+            'MaSach': book['MaSach'],
+            'TenSach': book['TenSach'],
+            'TacGia': book['TacGia'],
+            'TheLoai': book['TheLoai'],
+            'SoLuong': book['SoLuong']
+        })
+    return jsonify(result)
+
+
+
 @app.route('/api/create_book', methods=['POST'])
 def create_book():
     data = request.get_json()
@@ -174,7 +426,7 @@ def create_book():
 def admin_panel():
     # Check for password in query parameter
     password_arg = request.args.get('password')
-    if password_arg != 'adminpanel':
+    if password_arg != 'adminpanel123':
         return "Access Denied.", 403
 
     db = get_db()
@@ -273,6 +525,11 @@ def borrow_book():
             (ma_hs, ma_sach)
         )
         db.commit()
+        tenhs = get_ten_by_mahs(ma_hs)
+        email = get_email_by_mahs(ma_hs)
+        tensach = get_tensach_by_masach(ma_sach)
+        email_content = borrow_email(tenhs, tensach, "whenever you finish it.")
+        response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
         return jsonify({'message': 'Book borrowed successfully', 'MaMuon': borrow_cursor.lastrowid}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -302,6 +559,11 @@ def return_book():
         new_quantity = book['SoLuong'] + 1 if book else 0
         db.execute('UPDATE Sach SET SoLuong = ? WHERE MaSach = ?', (new_quantity, ma_sach))
         db.commit()
+        tenhs = get_ten_by_mahs(ma_hs)
+        email = get_email_by_mahs(ma_hs)
+        tensach = get_tensach_by_masach(ma_sach)
+        email_content = return_email(tenhs, tensach)
+        response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
         return jsonify({'message': 'Book returned successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
