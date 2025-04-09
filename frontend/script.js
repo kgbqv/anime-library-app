@@ -169,21 +169,36 @@ function displayResults(htmlContent) {
 // Function to parse the search input and fetch filtered books
 function fetchFilteredBooks(){
   const searchBar = document.getElementById('searchFilter');
-  const searchTerm = searchBar.value;  // Use .value, not .value()
-  const regex = /(\w+):'([^']+)'/g;
+  const searchTerm = searchBar.value;
+  const pairRegex = /(\w+):'([^']+)'/g;
   let match;
-  let filters = { genres: [], authors: [] };
-  
-  // Parse the input string for key:'value' pairs
-  while ((match = regex.exec(searchTerm)) !== null) {
+  let filters = { genres: [], authors: [], titles: [] };
+  let consumed = [];  // will track all matched substrings
+
+  // 1) Extract key:'value' pairs
+  while ((match = pairRegex.exec(searchTerm)) !== null) {
     const key = match[1].toLowerCase();
     const value = match[2];
-    if(key === 'genre'){
+    consumed.push(match[0]);  // e.g. "genre:'action'"
+    if (key === 'genre') {
       filters.genres.push(value);
-    } else if(key === 'author'){
+    } else if (key === 'author') {
       filters.authors.push(value);
     }
   }
+
+  // 2) Remove those matched substrings from the original, then split remainder
+  let remainder = searchTerm;
+  consumed.forEach(str => {
+    remainder = remainder.replace(str, '');
+  });
+  // split on whitespace, filter out empty tokens
+  const titleTokens = remainder
+    .split(/\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  filters.titles = titleTokens;
+
   console.log("Filters parsed:", filters);
   
   // Call the filter API endpoint with the filters as JSON payload
@@ -196,7 +211,7 @@ function fetchFilteredBooks(){
   .then(data => {
     console.log("Filtered books data:", data);
     let html = '<h3>Filtered Books</h3><ul>';
-    if(data.length === 0) {
+    if (data.length === 0) {
       html += '<li>No books found.</li>';
     } else {
       data.forEach(book => {
@@ -214,8 +229,9 @@ function fetchFilteredBooks(){
   .catch(error => console.error("Error fetching filtered books:", error));
 }
 
-// Attach event listener to the filter button
+// Attach to your search button
 document.getElementById('searchButton').addEventListener('click', fetchFilteredBooks);
+
 
 
 // API function: Fetch available books and render in the sidebar

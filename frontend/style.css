@@ -202,3 +202,23 @@ footer {
 li {
   padding: 5px;
 }
+
+@keyframes loopHeight {
+  0% {
+    height: 0;
+  }
+  50% {
+    height: 100px;
+  }
+  99% {
+    height: 200px;
+  }
+  100% {
+    height: 0;
+  }
+}
+
+#loading img {
+
+  /* animation: loopHeight 5s infinite; */
+}
