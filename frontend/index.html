@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Anime Library Quest</title>
+  <title>library management</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +12,6 @@
       <p style="color: white; font-size: 30px;">Loading</p>
     </div>
     <script>
-      // Hide the loading screen after 2 seconds
       function changeDots() {
         const loadingText = document.querySelector("#loading p");
         const dots = loadingText.textContent.match(/\./g) || [];
@@ -26,7 +25,7 @@
       document.addEventListener("DOMContentLoaded", function() {
         setTimeout(function() {
           document.getElementById("loading").style.display = "none";
-        }, 2000); // Adjust the time as needed
+        }, 2000);
       });
     </script>
     <div id="name-container" style="position: fixed; top: 0; right: 0; padding: 0.5rem; background-color: brown; color: white;">
@@ -44,12 +43,10 @@
         `;
       }
     </script>
-  <!-- Fixed sidebar for available books -->
   <aside class="sidebar" style="height: 100vh; display: flex; flex-direction: column;">
     
     
     <div id="books-container" style="display: flex; flex-direction: column; height: 100%;">
-      <!-- Books will be rendered here via JavaScript -->
     </div>
 
     <div id="results-container" style="display: none; height: 60vh;"> </div>
@@ -70,6 +67,7 @@
         }
         loginButton.addEventListener('click', () => {
           window.location.href = 'login.html';
+
         });
         logoutButton.addEventListener('click', () => {
             dialogues = document.getElementById('dialogue-options');
@@ -82,7 +80,6 @@
               <button class="dialogue-option" data-choice="most">Most Borrowed</button>
               <button class="dialogue-option" data-choice="borrow">Borrow Book</button>
               <button class="dialogue-option" data-choice="return">Return Book</button>
-              <button class="dialogue-option" data-choice="create">Create Book</button>
             </div>
             `;
             localStorage.removeItem('MaHS');
@@ -93,17 +90,12 @@
         });
       </script>
   </aside>
-  
-  <!-- Main content area -->
   <div class="main-content" style="background-color: rgb(68, 44, 12);">
     <canvas id="canvas" width=100% height="100%"></canvas>
   </div>
   <script src="game.js"></script>
-
-  <!-- Dialogue area fixed at the bottom -->
   <div class="dialogue-area" style="position: fixed; bottom: 0;">
     <div class="dialogue-content">
-      <!-- Dialogue options column -->
       <div class="dialogue-options" id="dialogue-options">
         <p id="dialogue-line">
           "Greetings!"
@@ -115,12 +107,9 @@
           <button class="dialogue-option" data-choice="most">Most Borrowed</button>
           <button class="dialogue-option" data-choice="borrow">Borrow Book</button>
           <button class="dialogue-option" data-choice="return">Return Book</button>
-          <button class="dialogue-option" data-choice="create">Create Book</button>
         </div>
       </div>
-      <!-- Inline forms container for sequential input (hidden by default) -->
       <div class="dialogue-form-container" id="dialogue-form-container" style="display:none;">
-        <!-- Borrow Book Form (sequential) -->
         <div id="borrow-form" class="dialogue-form" style="display:none;">
           <h3>Borrow a Book</h3>
           <div id="borrow-question"></div>
@@ -128,7 +117,6 @@
           <button id="borrow-next">Next</button>
           <button class="cancel-form">Cancel</button>
         </div>
-        <!-- Return Book Form (sequential) -->
         <div id="return-form" class="dialogue-form" style="display:none;">
           <h3>Return a Book</h3>
           <div id="return-question"></div>
@@ -136,18 +124,9 @@
           <button id="return-next">Next</button>
           <button class="cancel-form">Cancel</button>
         </div>
-        <!-- Create Book Form (sequential) -->
-        <div id="create-form" class="dialogue-form" style="display:none;">
-          <h3>Create a New Book</h3>
-          <div id="create-question"></div>
-          <input type="text" id="create-input" placeholder="">
-          <button id="create-next">Next</button>
-          <button class="cancel-form">Cancel</button>
-        </div>
       </div>
       
     </div>
-    <!-- Character image pinned in dialogue area -->
     <div class="character-image">
       <img src="assets/character1.png" alt="Main Character">
     </div>
