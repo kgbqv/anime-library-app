@@ -1,5 +1,5 @@
 import pandas as pd
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request, g, current_app
 import sqlite3
 import os
 from datetime import datetime
@@ -7,14 +7,17 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail,Message
 from email_helper import registration_email, borrow_email, return_email
+import backup_helper
+import time
 
 app = Flask(__name__)
 CORS(app)
 
+
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USERNAME'] = 'voainlp@gmail.com'
-app.config['MAIL_PASSWORD'] = 'insert app password here'
+app.config['MAIL_PASSWORD'] = 'xkxp qdmq oixy cklw'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 
@@ -368,20 +371,33 @@ def filter_books():
     data = request.get_json() or {}
     genres_list = data.get('genres', [])
     authors_list = data.get('authors', [])
+    titles_list = data.get('titles', [])
 
     db = get_db()
-    # Base query returns all books when no filter is applied.
     query = "SELECT * FROM Sach WHERE 1=1"
     params = []
 
+    # Filter by genre
     if genres_list:
         placeholders = ','.join('?' for _ in genres_list)
         query += f" AND TheLoai IN ({placeholders})"
         params.extend(genres_list)
+
+    # Filter by author
     if authors_list:
         placeholders = ','.join('?' for _ in authors_list)
         query += f" AND TacGia IN ({placeholders})"
         params.extend(authors_list)
+
+    # Filter by title substring
+    if titles_list:
+        # build: AND (TenSach LIKE ? OR TenSach LIKE ? OR ...)
+        like_clauses = []
+        for _ in titles_list:
+            like_clauses.append("TenSach LIKE ?")
+        query += " AND (" + " AND ".join(like_clauses) + ")"
+        # for each title, wrap with wildcards
+        params.extend([f"%{t}%" for t in titles_list])
 
     cursor = db.execute(query, tuple(params))
     books = cursor.fetchall()
@@ -396,6 +412,7 @@ def filter_books():
             'SoLuong': book['SoLuong']
         })
     return jsonify(result)
+
 
 
 
@@ -578,6 +595,93 @@ def log_visit():
     app.logger.info("Visitor logged: IP: %s at %s", ip, timestamp)
     return jsonify({"message": "Visit logged"}), 200
 
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+if "GOOGLE_API_KEY" not in os.environ:
+    os.environ["GOOGLE_API_KEY"] = 'AIzaSyCpFPHPTkec6_umV-NT3zfc5_wPTH1ld2Q'
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash-001",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2
+)
+
+@app.route('/api/gemini', methods=['POST'])
+def gemini_response():
+    """
+    Receives a prompt in JSON, uses the Gemini LLM to generate a response,
+    and returns the response as JSON.
+    """
+    data = request.get_json()
+    prompt = data.get('prompt')
+
+    if not prompt:
+        return jsonify({"error": "A prompt is required."}), 400
+
+    try:
+        # Generate response from the language model.
+        response_text = llm(prompt)
+        return jsonify({"response": response_text})
+    except Exception as e:
+        return jsonify({"error": f"LLM error: {str(e)}"}), 500
+
+# ---------------------------
+# Translation Endpoint using Gemini LLM
+# ---------------------------
+# ---------------------------
+# Book Query Endpoint using Gemini LLM
+# ---------------------------
+@app.route('/api/book_query', methods=['POST'])
+def book_query():
+    """
+    Receives a book description in the JSON payload,
+    queries the available books from the database,
+    and uses the Gemini LLM to suggest which book best fits the description.
+    Responds with the book's ID and a short explanation.
+    """
+    data = request.get_json()
+    description = data.get('description', '')
+    if not description:
+        return jsonify({"error": "No description provided."}), 400
+
+    # Query the database for available books (for example, books that are in stock).
+    db = get_db()
+    cursor = db.execute('SELECT MaSach, TenSach, TacGia, TheLoai, SoLuong FROM Sach WHERE SoLuong > 0')
+    books = cursor.fetchall()
+
+    if not books:
+        return jsonify({"error": "No available books in the database."}), 404
+
+    # Build a text summary of the available books.
+    # This summary will be passed to the LLM so it can match the description with the book details.
+    book_list_str = "\n".join([
+        f"ID: {book['MaSach']}, Title: {book['TenSach']}, Author: {book['TacGia']}, Genre: {book['TheLoai']}"
+        for book in books
+    ])
+
+    # Create a system message that includes the available book list and instruction.
+    system_message = (
+        "You are a helpful assistant that selects the best matching book from the available list given a description. "
+        "Below is the list of available books:\n"
+        f"{book_list_str}\n\n"
+        "Based on the user description, please respond with the book's ID and a short explanation about why it matches."
+    )
+
+    # The human message carries the user-provided description.
+    messages = [
+    {"role": "system",  "content": system_message},
+    {"role": "user",    "content": description}
+    ]
+
+
+    try:
+        # Invoke the Gemini LLM with the prompt messages.
+        response_text = llm.invoke(messages)
+        return jsonify({"response": response_text})
+    except Exception as e:
+        return jsonify({"error": f"LLM error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
