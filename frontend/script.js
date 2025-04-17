@@ -137,22 +137,13 @@ function handleDialogChoice(choice) {
     // Show sequential borrow book form
     toggleForm(true);
     document.getElementById('borrow-form').style.display = 'block';
-    document.getElementById('create-form').style.display = 'none';
     document.getElementById('return-form').style.display = 'none';
     initBorrowForm();
-  } else if (choice === 'create') {
-    // Show sequential create book form
-    toggleForm(true);
-    document.getElementById('create-form').style.display = 'block';
-    document.getElementById('borrow-form').style.display = 'none';
-    document.getElementById('return-form').style.display = 'none';
-    initCreateForm();
   } else if (choice === 'return') {
     // Show sequential return book form
     toggleForm(true);
     document.getElementById('return-form').style.display = 'block';
     document.getElementById('borrow-form').style.display = 'none';
-    document.getElementById('create-form').style.display = 'none';
     initReturnForm();
   } else {
     console.log("Unknown dialogue choice:", choice);
