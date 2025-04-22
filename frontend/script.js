@@ -8,10 +8,6 @@ function showDialogueOptions() {
 // Base API URL for your Flask backend (use HTTPS if needed)
 const BASE_API_URL = 'https://khgb.pythonanywhere.com';
 
-// Global variables for sequential create form
-let createState = 0;  // 0: Book Title, 1: Author, 2: Genre, 3: Quantity
-let createData = {};
-
 
 dialog = document.getElementById("dialogue-line");
 
@@ -72,16 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // Attach event listener for create form "Next" button and input field for Enter key
-  const createInput = document.getElementById('create-input');
-  document.getElementById('create-next').addEventListener('click', handleCreateNext);
-  createInput.addEventListener('keydown', (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleCreateNext();
-    }
-  });
-  
   // Attach event listener for return form "Next" button and input field for Enter key
   const returnInput = document.getElementById('return-input');
   document.getElementById('return-next').addEventListener('click', handleReturnNext);
@@ -99,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleForm(false);
       showDialogueOptions();
       resetBorrowForm();
-      resetCreateForm();
       resetReturnForm();
     });
   });

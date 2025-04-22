@@ -126,7 +126,8 @@ def init_db():
             TenSach TEXT NOT NULL,
             TacGia TEXT,
             TheLoai TEXT,
-            SoLuong INTEGER DEFAULT 0
+            SoLuong INTEGER DEFAULT 0,
+            LinkSach TEXT
         )
     ''')
     cursor.execute('''
