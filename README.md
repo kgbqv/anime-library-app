@@ -75,6 +75,8 @@ Link Admin Panel: https://khgb.pythonanywhere.com/admin?password=adminpanel123
   - Một người dùng có thể có nhiều yêu cầu mượn (1-N).  
   - Một sách có thể được mượn nhiều lần (1-N).  
 
+- Không dùng `JOIN` vì không cần thiết trong trường hợp này.
+
 ## 4. Cách ứng dụng sử dụng CSDL
 
 - **Truy vấn cho các chức năng chính:**
