@@ -1,8 +1,8 @@
 
 # Báo cáo Dự Án Cuối Kỳ - SQL Project
 
-**Ngày nộp:** 24/04/2025  
-**Thành viên thực hiện:** Bùi Quốc Vĩnh Khang 230312, Võ Kế Hoài 230309
+**Ngày nộp:** 22/04/2025  
+**Thành viên thực hiện:** Bùi Quốc Vĩnh Khang 230312 (`kgbqv`), Võ Kế Hoài 230309 (`hoaivoke`)
 
 Link GitHub: https://github.com/kgbqv/anime-library-app
 
@@ -20,8 +20,6 @@ Link Admin Panel: https://khgb.pythonanywhere.com/admin?password=adminpanel123
   Ngoài ra, nếu được phát triển thêm thì nó có thể sẽ nâng cao số lượng người đọc sách trong trường học.
 - **Đối tượng sử dụng:**  
   Học sinh, sinh viên và nhân viên thư viện.
-
----
 
 ## 2. Ý tưởng và chức năng
 
@@ -42,7 +40,6 @@ Link Admin Panel: https://khgb.pythonanywhere.com/admin?password=adminpanel123
   4. Người dùng nhận thông báo qua email
   5. Người dùng trả sách
 
----
 
 ## 3. Cơ sở dữ liệu (sử dụng SQLite)
 
@@ -99,10 +96,6 @@ Link Admin Panel: https://khgb.pythonanywhere.com/admin?password=adminpanel123
 - **Dữ liệu mẫu trong database:**  
     ![dữ liệu mẫu](https://files.catbox.moe/iv1npj.png)
 
-- **Link demo:**  
-  (Chèn link demo hoặc video quay màn hình nếu có)
-
----
 
 ## 6. Đánh giá & hướng phát triển
 
