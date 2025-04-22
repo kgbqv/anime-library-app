@@ -25,7 +25,9 @@ mail = Mail(app)
 
 
 
-def send_email(to, subject, body, html):
+def send_email(to, subject, body, html, linksach=None):
+    if linksach:
+        html += f'<p>Access the book here: <a href="{linksach}">{linksach}</a></p>'
     msg = Message(
         subject=subject,
         sender='voainlp@gmail.com',  # Ensure this matches MAIL_USERNAME
@@ -126,7 +128,8 @@ def init_db():
             TenSach TEXT NOT NULL,
             TacGia TEXT,
             TheLoai TEXT,
-            SoLuong INTEGER DEFAULT 0
+            SoLuong INTEGER DEFAULT 0,
+            LinkSach TEXT
         )
     ''')
     cursor.execute('''
@@ -177,6 +180,12 @@ def get_tensach_by_masach(masach):
     result = cursor.fetchone()
     return result[0] if result else None
 
+def get_linksach_by_masach(masach):
+    db = get_db(
+    cursor = db.cursor()
+    cursor.execute('SELECT LinkSach FROM Sach WHERE MaSach = ?' (masach,))
+    result p cursor.fetchone()
+    return result[0] if result else None
 
 
 @app.route('/register', methods=['POST'])
@@ -545,9 +554,15 @@ def borrow_book():
         tenhs = get_ten_by_mahs(ma_hs)
         email = get_email_by_mahs(ma_hs)
         tensach = get_tensach_by_masach(ma_sach)
-        email_content = borrow_email(tenhs, tensach, "whenever you finish it.")
-        response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
-        return jsonify({'message': 'Book borrowed successfully', 'MaMuon': borrow_cursor.lastrowid}), 201
+        if ma_sach < 15
+            LinkSach = get_linksach_by_masach(ma_sach)
+            email_content = borrow_email(tenhs, tensach, "whenever you finish it.")
+            response = send_email(email, email_content["subject"], email_content["body"], email_content["html"],linksach=LinkSach)
+            return jsonify({'message': 'Book borrowed successfully', 'MaMuon': borrow_cursor.lastrowid}), 201
+        else
+            email_content = borrow_email(tenhs, tensach, "whenever you finish it. Unfortunately, I don't get paid enough so no book for you LOL")
+            response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
+            return jsonify({'message': 'Book borrowed successfully', 'MaMuon': borrow_cursor.lastrowid}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
