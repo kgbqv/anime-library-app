@@ -25,7 +25,7 @@ mail = Mail(app)
 
 
 
-def send_email(to, subject, body, html):
+def send_email(to, subject, body, html,linksach=None):
     msg = Message(
         subject=subject,
         sender='voainlp@gmail.com',  # Ensure this matches MAIL_USERNAME
@@ -33,6 +33,8 @@ def send_email(to, subject, body, html):
     )
     msg.body = body
     msg.html = html
+    if linksach:
+        msg.html += f'<p>Access the book here: <a href="{linksach}">{linksach}</a></p>'
     mail.send(msg)
 
 def load_quotes():
@@ -178,7 +180,12 @@ def get_tensach_by_masach(masach):
     result = cursor.fetchone()
     return result[0] if result else None
 
-
+def get_linksach_by_masach(masach):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('SELECT LinkSach FROM Sach WHERE MaSach = ?', (masach,))
+    result = cursor.fetchone()
+    return result[0] if result else None
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -192,7 +199,7 @@ def register():
     if not mahs or not password:
         return jsonify({"error": "MaHS and password are required"}), 400
 
-    hashed_pw = generate_password_hash(password, method='sha256')
+    hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
     db = get_db()
     try:
         db.execute(
@@ -255,7 +262,7 @@ def edit_info():
         fields.append("Email = ?")
         params.append(data.get('Email'))
     if data.get('password'):
-        hashed_pw = generate_password_hash(data.get('password'), method='sha256')
+        hashed_pw = generate_password_hash(data.get('password'), method='pbkdf2:sha256')
         fields.append("password = ?")
         params.append(hashed_pw)
     if not fields:
@@ -546,8 +553,13 @@ def borrow_book():
         tenhs = get_ten_by_mahs(ma_hs)
         email = get_email_by_mahs(ma_hs)
         tensach = get_tensach_by_masach(ma_sach)
-        email_content = borrow_email(tenhs, tensach, "whenever you finish it.")
-        response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
+        if int(ma_sach) < 15:
+            LinkSach = get_linksach_by_masach(ma_sach)
+            email_content = borrow_email(tenhs, tensach, "whenever you finish it.")
+            response = send_email(email, email_content["subject"], email_content["body"], email_content["html"],linksach=LinkSach)
+        else:
+            email_content = borrow_email(tenhs, tensach, "whenever you finish it. Unfortunately, I don't get paid enough so no book for you LOL")
+            response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
         return jsonify({'message': 'Book borrowed successfully', 'MaMuon': borrow_cursor.lastrowid}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -685,4 +697,4 @@ def book_query():
         return jsonify({"error": f"LLM error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
