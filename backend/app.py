@@ -1,4 +1,3 @@
-import pandas as pd
 from flask import Flask, jsonify, request, g, current_app
 import sqlite3
 import os
@@ -28,7 +27,7 @@ mail = Mail(app)
 def send_email(to, subject, body, html,linksach=None):
     msg = Message(
         subject=subject,
-        sender='voainlp@gmail.com',  # Ensure this matches MAIL_USERNAME
+        sender='voainlp@gmail.com',
         recipients=[to]
     )
     msg.body = body
@@ -37,69 +36,6 @@ def send_email(to, subject, body, html,linksach=None):
         msg.html += f'<p>Access the book here: <a href="{linksach}">{linksach}</a></p>'
     mail.send(msg)
 
-def load_quotes():
-    df = pd.read_csv('mysite/quotes.csv')
-    df['category'] = df['tags'].apply(lambda x: str(x).split(';'))
-    df = df.drop('tags', axis=1)
-    return df
-
-df_quotes = load_quotes()
-
-@app.route('/', methods=['GET'])
-def home():
-    return jsonify({
-        'message': 'Welcome to the Quote API. Use the /random-quote endpoint to get a random quote.'
-    })
-
-@app.route('/random-quote', methods=['GET'])
-def random_quote():
-    random_row = df_quotes.sample(n=1).iloc[0]
-    return jsonify({
-        'id': str(random_row['index']),
-        'quote': random_row['quote'],
-        'author': random_row['author'],
-        'category': random_row['category']
-    })
-
-@app.route('/search', methods=['POST'])
-def search_quote():
-    query = request.get_json().get('query', '')
-
-    filtered_df = df_quotes[
-        df_quotes['quote'].str.contains(query, case=False, na=False) |
-        df_quotes['category'].apply(lambda categories: any(query in category.lower() for category in categories))
-    ]
-
-    if not filtered_df.empty:
-        filtered_df.sort_values('likes', inplace=True,ascending=False)
-        random_row = filtered_df.sample(n=1).iloc[0]
-        return jsonify({
-            'id': str(random_row['index']),
-            'quote': random_row['quote'],
-            'author': random_row['author'],
-            'category': random_row['category']
-        })
-    else:
-        return jsonify({"error": "No matching quotes found."})
-
-@app.route('/fetch-quote', methods=['POST'])
-def fetch_quote():
-    quote_id = request.get_json().get('id', '')
-
-    filtered_df = df_quotes[
-        df_quotes['index'] == int(quote_id)
-    ]
-
-    if not filtered_df.empty:
-        random_row = filtered_df.iloc[0]
-        return jsonify({
-            'id': str(random_row['index']),
-            'quote': random_row['quote'],
-            'author': random_row['author'],
-            'category': random_row['category']
-        })
-    else:
-        return jsonify({"error": "Quote not found."})
 
 DATABASE = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'library.db')
 
@@ -108,7 +44,7 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row  # to access columns by name
+        db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
@@ -213,9 +149,6 @@ def register():
     response = send_email(email, email_content["subject"], email_content["body"], email_content["html"])
     return jsonify({"message": "Registration successful"}), 201
 
-# ---------------------------
-# Login Endpoint
-# ---------------------------
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -231,14 +164,10 @@ def login():
         return jsonify({"error": "User not found"}), 404
 
     if check_password_hash(user['password'], password):
-        # In a real app, you would create a session or token here.
         return jsonify({"message": "Login successful", "MaHS": user["MaHS"], "TenHS": user["TenHS"]}), 200
     else:
         return jsonify({"error": "Incorrect password"}), 401
 
-# ---------------------------
-# Edit Info Endpoint
-# ---------------------------
 @app.route('/edit_info', methods=['POST'])
 def edit_info():
     data = request.get_json()
@@ -246,7 +175,6 @@ def edit_info():
     if not mahs:
         return jsonify({"error": "MaHS is required"}), 400
 
-    # Only update fields that are provided
     fields = []
     params = []
     if data.get('TenHS'):
@@ -280,13 +208,8 @@ def edit_info():
     return jsonify({"message": "User info updated successfully"}), 200
 
 
-# ---------------------------
-# API Endpoints
-# ---------------------------
-
 @app.route('/api/books', methods=['GET'])
 def get_books():
-    """Return list of available books (SoLuong > 0)"""
     db = get_db()
     cursor = db.execute('SELECT * FROM Sach WHERE SoLuong > 0')
     books = cursor.fetchall()
@@ -303,7 +226,6 @@ def get_books():
 
 @app.route('/api/students', methods=['GET'])
 def get_students():
-    """Return list of students"""
     db = get_db()
     cursor = db.execute('SELECT * FROM HocSinh')
     students = cursor.fetchall()
@@ -319,11 +241,6 @@ def get_students():
 
 @app.route('/api/overdue', methods=['GET'])
 def get_overdue():
-    """
-    Return list of overdue loan records.
-    Overdue is defined as NgayTra earlier than the current UTC time
-    and TrangThai is 'Chưa trả'.
-    """
     now = datetime.utcnow().isoformat()
     db = get_db()
     query = '''
@@ -346,7 +263,6 @@ def get_overdue():
 
 @app.route('/api/most_borrowed', methods=['GET'])
 def most_borrowed():
-    """Return the most frequently borrowed book."""
     db = get_db()
     query = '''
         SELECT s.TenSach, COUNT(ms.MaMuon) AS SoLanMuon
@@ -385,26 +301,21 @@ def filter_books():
     query = "SELECT * FROM Sach WHERE 1=1"
     params = []
 
-    # Filter by genre
     if genres_list:
         placeholders = ','.join('?' for _ in genres_list)
         query += f" AND TheLoai IN ({placeholders})"
         params.extend(genres_list)
 
-    # Filter by author
     if authors_list:
         placeholders = ','.join('?' for _ in authors_list)
         query += f" AND TacGia IN ({placeholders})"
         params.extend(authors_list)
 
-    # Filter by title substring
     if titles_list:
-        # build: AND (TenSach LIKE ? OR TenSach LIKE ? OR ...)
         like_clauses = []
         for _ in titles_list:
             like_clauses.append("TenSach LIKE ?")
         query += " AND (" + " AND ".join(like_clauses) + ")"
-        # for each title, wrap with wildcards
         params.extend([f"%{t}%" for t in titles_list])
 
     cursor = db.execute(query, tuple(params))
@@ -430,7 +341,7 @@ def create_book():
     ten_sach = data.get('TenSach')
     tac_gia = data.get('TacGia')
     the_loai = data.get('TheLoai')
-    so_luong = data.get('SoLuong', 0)  # Default to 0 if not provided
+    so_luong = data.get('SoLuong', 0)
 
     if not ten_sach:
         return jsonify({'error': 'Book title (TenSach) is required'}), 400
@@ -449,7 +360,6 @@ def create_book():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_panel():
-    # Check for password in query parameter
     password_arg = request.args.get('password')
     if password_arg != 'adminpanel123':
         return "Access Denied.", 403
@@ -468,7 +378,6 @@ def admin_panel():
             try:
                 cursor = db.execute(command)
                 db.commit()
-                # If it's a SELECT command, fetch and show the results
                 if command.strip().upper().startswith('SELECT'):
                     result = cursor.fetchall()
                 else:
@@ -623,10 +532,6 @@ llm = ChatGoogleGenerativeAI(
 
 @app.route('/api/gemini', methods=['POST'])
 def gemini_response():
-    """
-    Receives a prompt in JSON, uses the Gemini LLM to generate a response,
-    and returns the response as JSON.
-    """
     data = request.get_json()
     prompt = data.get('prompt')
 
@@ -634,18 +539,11 @@ def gemini_response():
         return jsonify({"error": "A prompt is required."}), 400
 
     try:
-        # Generate response from the language model.
         response_text = llm(prompt)
         return jsonify({"response": response_text})
     except Exception as e:
         return jsonify({"error": f"LLM error: {str(e)}"}), 500
 
-# ---------------------------
-# Translation Endpoint using Gemini LLM
-# ---------------------------
-# ---------------------------
-# Book Query Endpoint using Gemini LLM
-# ---------------------------
 @app.route('/api/book_query', methods=['POST'])
 def book_query():
     """
@@ -659,7 +557,6 @@ def book_query():
     if not description:
         return jsonify({"error": "No description provided."}), 400
 
-    # Query the database for available books (for example, books that are in stock).
     db = get_db()
     cursor = db.execute('SELECT MaSach, TenSach, TacGia, TheLoai, SoLuong FROM Sach WHERE SoLuong > 0')
     books = cursor.fetchall()
@@ -667,14 +564,11 @@ def book_query():
     if not books:
         return jsonify({"error": "No available books in the database."}), 404
 
-    # Build a text summary of the available books.
-    # This summary will be passed to the LLM so it can match the description with the book details.
     book_list_str = "\n".join([
         f"ID: {book['MaSach']}, Title: {book['TenSach']}, Author: {book['TacGia']}, Genre: {book['TheLoai']}"
         for book in books
     ])
 
-    # Create a system message that includes the available book list and instruction.
     system_message = (
         "You are a helpful assistant that selects the best matching book from the available list given a description. "
         "Below is the list of available books:\n"
@@ -682,7 +576,6 @@ def book_query():
         "Based on the user description, please respond with the book's ID and a short explanation about why it matches."
     )
 
-    # The human message carries the user-provided description.
     messages = [
     {"role": "system",  "content": system_message},
     {"role": "user",    "content": description}
@@ -690,7 +583,6 @@ def book_query():
 
 
     try:
-        # Invoke the Gemini LLM with the prompt messages.
         response_text = llm.invoke(messages)
         return jsonify({"response": response_text})
     except Exception as e:
